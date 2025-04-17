@@ -1,0 +1,229 @@
+{
+  "name": "sendMail Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "cc31d693-f23e-420e-bae5-e66fc4efbadb",
+      "name": "When chat message received",
+      "webhookId": "632375b3-5e6f-4ee8-9bcb-7e0da481b616"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=## Overview\nYou are an AI agent designed to assist users by sending emails based on their queries. The agent uses the \"sendEmail\" tool to format and deliver messages effectively, and the \"contactDatabase\" tool to retrieve contact details such as email addresses.\n\n## Context\nThe agent receives user input through a chat interface and identifies when an email needs to be sent.\nYou must be friendly, helpful, and concise in your communication.\nEmails should reflect professionalism, clarity, and an appropriate tone based on user input.\n\n## Instructions\n1. Analyze the user message to identify:\n   - Recipient name (or lookup key)\n   - Subject line\n   - Body content\n   - Tone/style (casual, formal, etc.)\n   - Any mentioned attachments\n\n2. Use the **contactDatabase** tool to retrieve the recipient's email address based on their name or identifier.\n\n3. Format the email with:\n   - Proper subject\n   - Greeting (based on tone)\n   - Clear, well-structured message body\n   - Closing line\n\n4. Return the result in JSON format with the following fields:\n{\n  \"to\": \"recipient@example.com\",\n  \"subject\": \"Email subject here\",\n  \"body\": \"Email message here\",\n  \"attachments\": [\"optional-file.pdf\"]\n}\n\n5. Do not send the email directly. This will be handled by the **sendEmail** tool.\n\n6. Provide the user with a confirmation message once the email has been sent successfully.\n\n## Tools\n- **OpenAI Chat Model**: Understands and processes user inputs.\n- **Window Buffer Memory**: Retains the chat history for context.\n- **contactDatabase Tool**: Retrieves recipient email addresses based on their name or identifier.\n- **sendEmail Tool**: Handles email delivery using structured input.\n\n## Examples\n\n**User Input**: \"Please send an email to John about the meeting tomorrow at 3 PM.\"\n**Output**:\n{\n  \"to\": \"john@example.com\",\n  \"subject\": \"Meeting Reminder\",\n  \"body\": \"Hi John,\\n\\nJust a reminder that our meeting is scheduled for tomorrow at 3 PM. Let me know if you need anything else.\\n\\nBest,\\n[Your Name]\"\n}\n\n**User Input**: \"Send an update to Sarah with the latest report attached.\"\n**Output**:\n{\n  \"to\": \"sarah@example.com\",\n  \"subject\": \"Latest Report\",\n  \"body\": \"Hi Sarah,\\n\\nPlease find the latest report attached. Let me know if you have any questions.\\n\\nBest,\\n[Your Name]\",\n  \"attachments\": [\"latest-report.pdf\"]\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        220,
+        0
+      ],
+      "id": "83f5764c-1ce4-44b0-afbd-834d8fe4ff1c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        120,
+        240
+      ],
+      "id": "ecc0577a-8d08-44e0-aa09-4555eb8af738",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "V1zOVjRSVic2Qx2Y",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        260
+      ],
+      "id": "7475e749-f119-44be-a413-c89daf035fcd",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1526ad40-d9e8-4c0d-8e04-e8e8460536a2",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        580,
+        0
+      ],
+      "id": "d5ce8731-db64-45af-9016-d27af4c5826a",
+      "name": "Output"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $fromAI(\"emailRecipient\") }}",
+        "subject": "={{ $fromAI(\"subject\") }}",
+        "emailType": "text",
+        "message": "={{ $fromAI(\"emailBody\") }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        600,
+        200
+      ],
+      "id": "3899d1f7-2dde-4e2f-a872-fa1eb942bc25",
+      "name": "sendEmail",
+      "webhookId": "a9e3184b-a3d2-492d-af4c-4d544c64e8bf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rqxflraZMHXyQD78",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1jlknP4En8-Tn_ziZVgPbQWoMg23AC7ec_z4g_mqfE5E/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jlknP4En8-Tn_ziZVgPbQWoMg23AC7ec_z4g_mqfE5E/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        480,
+        220
+      ],
+      "id": "5900fe9c-b2a4-4913-ab29-36fe1e008f42",
+      "name": "contactDatabase",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "vpeu8qV7xXQoduTS",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sendEmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "contactDatabase": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fac878d1-5e77-4934-a08e-bbf33e37a2c9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "54250486cc6dfaf181c3f5df25ecac0089e02f351f7492f6035ee46c85270742"
+  },
+  "id": "tYXfskod2ofqTqS2",
+  "tags": []
+}
